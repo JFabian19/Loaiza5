@@ -3,13 +3,12 @@
   Tech: React + TailwindCSS (no external deps). Works as a standalone component.
   How to use:
   - Drop this file in a React/Next.js app and render <Loaiza5Aluminum />.
-  - Replace project image URLs with your own photos.
 */
 
 const CONTACT_EMAIL = "Loaiza5Aluminun@gmail.com";
 const CONTACT_PHONE = "+1-813-784-6949"; // Tampa, FL (813)
 const BUSINESS_NAME = "LOAIZA5 ALUMINUM LLC";
-const HERO_IMG = "/images/hero.jpg";
+const HERO_IMG = "Public/images/hero.jpg";
 
 function PhoneLink({ className = "" }) {
   return (
