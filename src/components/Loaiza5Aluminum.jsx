@@ -9,7 +9,7 @@
 const CONTACT_EMAIL = "Loaiza5Aluminun@gmail.com";
 const CONTACT_PHONE = "+1-813-784-6949"; // Tampa, FL (813)
 const BUSINESS_NAME = "LOAIZA5 ALUMINUM LLC";
-const HERO_IMG = "public/images/hero.jpg";
+const HERO_IMG = "/images/hero.jpg";
 
 function PhoneLink({ className = "" }) {
   return (
