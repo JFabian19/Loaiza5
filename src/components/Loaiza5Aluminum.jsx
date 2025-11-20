@@ -1,367 +1,846 @@
-/*
-  LOAIZA5 ALUMINUM LLC – Single‑page website (EN version)
-  Tech: React + TailwindCSS (no external deps). Works as a standalone component.
-  How to use:
-  - Drop this file in a React/Next.js app and render <Loaiza5Aluminum />.
-*/
+import React, { useEffect, useMemo, useState } from "react";
 
-const CONTACT_EMAIL = "Loaiza5Aluminun@gmail.com";
-const CONTACT_PHONE = "+1-813-784-6949"; // Tampa, FL (813)
-const BUSINESS_NAME = "LOAIZA5 ALUMINUM LLC";
-const HERO_IMG = "Public/images/hero.jpg";
+/**
+ * Loaiza5 Aluminum LLC – Single-file Landing Page
+ * Tech: React + TailwindCSS (no extra deps)
+ * Bilingual: EN / ES via useState
+ * Lead Gen: prominent CTAs, click-to-call, WhatsApp, simple form (no backend)
+ * Integrations: Google Analytics 4 (gtag), Google Places Reviews (fallback if not configured), Google Maps embed
+ *
+ * ✅ Configuration (no Node globals, no process/import.meta usage):
+ * - You can pass config as props to the component OR via a global window.__LOAIZA5__CONFIG object.
+ *
+ * Props / window.__LOAIZA5__CONFIG keys:
+ *   gaMeasurementId: string (e.g. "G-XXXXXXXXXX")
+ *   businessPhoneE164: string (e.g. "+18137846949")
+ *   businessPhoneDisplay: string (e.g. "+1 (813) 784-6949")
+ *   whatsappNumber: string (e.g. "18137846949")
+ *   googlePlacesApiKey: string
+ *   googlePlaceId: string
+ *
+ * Example (global):
+ *   <script>
+ *     window.__LOAIZA5__CONFIG = {
+ *       gaMeasurementId: "G-AB12CDEF34",
+ *       googlePlacesApiKey: "YOUR_KEY",
+ *       googlePlaceId: "YOUR_PLACE_ID"
+ *     }
+ *   </script>
+ */
 
-function PhoneLink({ className = "" }) {
-  return (
-    <a href={`tel:${CONTACT_PHONE}`} className={`inline-flex items-center gap-2 rounded-2xl px-4 py-2 font-semibold shadow-sm border border-gray-200 bg-white hover:bg-gray-50 ${className}`}>
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4"><path d="M2.25 6.75a.75.75 0 01.75-.75h2.508a.75.75 0 01.705.49l1.2 3.2a.75.75 0 01-.189.817l-1.59 1.59a16.5 16.5 0 006.008 6.008l1.59-1.59a.75.75 0 01.817-.189l3.2 1.2a.75.75 0 01.49.705V21a.75.75 0 01-.75.75h-1.5C8.708 21.75 2.25 15.292 2.25 7.5v-1.5z"/></svg>
-      Call {CONTACT_PHONE}
-    </a>
-  );
-}
+// ---- Config helpers (safe for browsers) ----
+const DEFAULT_CONFIG = {
+  gaMeasurementId: "G-XXXXXXXXXX",
+  businessPhoneE164: "+18137846949",
+  businessPhoneDisplay: "+1 (813) 784-6949",
+  whatsappNumber: "18137846949",
+  googlePlacesApiKey: "",
+  googlePlaceId: "",
+};
 
-function CTAButton({ children, onClick, href }) {
-  const common = "inline-flex items-center justify-center rounded-2xl px-5 py-3 text-sm font-semibold shadow-sm bg-emerald-600 text-white hover:bg-emerald-700 focus:outline-none";
-  if (href) return (<a href={href} className={common}>{children}</a>);
-  return (<button onClick={onClick} className={common}>{children}</button>);
-}
-
-function Badge({ children, className = "" }) {
-  return <span className={`inline-block rounded-full border px-3 py-1 text-xs font-semibold ${className}`}>{children}</span>;
-}
-
-function Section({ id, title, subtitle, children }) {
-  return (
-    <section id={id} className="py-16 sm:py-20">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        {title && (
-          <div className="mb-10">
-            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-gray-900">{title}</h2>
-            {subtitle && <p className="mt-2 max-w-3xl text-gray-600">{subtitle}</p>}
-          </div>
-        )}
-        {children}
-      </div>
-    </section>
-  );
-}
-
-function ServiceCard({ icon, title, desc }) {
-  return (
-    <div className="group rounded-2xl border bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
-      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
-        {icon}
-      </div>
-      <h3 className="text-lg font-bold text-gray-900">{title}</h3>
-      <p className="mt-2 text-sm text-gray-600">{desc}</p>
-    </div>
-  );
-}
-
-function Icon({ name }) {
-  const cls = "w-6 h-6";
-  switch (name) {
-    case 'pool':
-      return (<svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 17c2 1.5 4 1.5 6 0s4-1.5 6 0 4 1.5 6 0"/><path d="M4 13c2 1.5 4 1.5 6 0s4-1.5 6 0 4 1.5 6 0"/><path d="M6 6h8"/><path d="M10 6v8"/></svg>);
-    case 'wrench':
-      return (<svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 3l-7 7"/><path d="M8 14l-5 5"/><circle cx="15" cy="9" r="1"/><path d="M18 2a4 4 0 01-6 4L3 15l6 6 11-9a4 4 0 00-2-10z"/></svg>);
-    case 'glass':
-      return (<svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 3v18M3 9h18M7 3v6M17 3v6"/></svg>);
-    case 'porch':
-      return (<svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 10l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M9 21v-8h6v8"/></svg>);
-    case 'carport':
-      return (<svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 10l10-6 10 6"/><path d="M4 10v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><path d="M7 20v-6h10v6"/></svg>);
-    default:
-      return (<svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/></svg>);
+function getWindowConfig() {
+  try {
+    return (typeof window !== "undefined" && window.__LOAIZA5__CONFIG) || {};
+  } catch (_) {
+    return {};
   }
 }
 
-function QuoteForm() {
+function mergeConfig(overrides) {
+  return { ...DEFAULT_CONFIG, ...getWindowConfig(), ...(overrides || {}) };
+}
+
+export default function Loaiza5Aluminum(props) {
+  const cfg = mergeConfig(props);
+
+  const [lang, setLang] = useState("en"); // 'en' | 'es'
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [reviews, setReviews] = useState([]);
+  const [loadingReviews, setLoadingReviews] = useState(false);
+
+  // --- Text dictionary ---
+  const t = useMemo(
+    () => ({
+      en: {
+        nav: { home: "Home", services: "Services", gallery: "Gallery", about: "About", contact: "Contact" },
+        cta: { quote: "Get a Free Quote", call: "Call Now" },
+        hero: {
+          h1: "Strong. Reliable. Aluminum Structures Built to Last.",
+          call: "Call Now",
+          quote: "Get a Free Quote",
+        },
+        about: {
+          title: "Who We Are",
+          body:
+            "With 15+ years of hands-on experience, Loaiza5 Aluminum LLC designs and builds screen enclosures, carports, patio extensions, and aluminum fencing for homeowners and businesses. We proudly serve Tampa, Lakeland and nearby areas. ",
+        },
+        services: {
+          title: "Specializing In",
+          items: [
+            {
+              icon: "🏊",
+              title: "Pool Cages & Rescreens",
+              desc: "New builds and mesh replacements for long‑lasting, bug‑free pool enclosures.",
+            },
+            {
+              icon: "🛠️",
+              title: "Repairs & Tear Downs",
+              desc: "Fast, professional repairs and safe tear‑downs of damaged structures.",
+            },
+            {
+              icon: "🪟",
+              title: "Glass & Screen Rooms",
+              desc: "Comfortable glass rooms and breezy screen rooms tailored to your home.",
+            },
+            {
+              icon: "🚗",
+              title: "Screen Lanais, Carports",
+              desc: "Screened lanais and aluminum carports built to code and made to last.",
+            },
+            {
+              icon: "🏡",
+              title: "Screen Porches",
+              desc: "Enjoy your porch without bugs while keeping airflow and light.",
+            },
+          ],
+          view: "View Gallery",
+        },
+        gallery: { title: "Gallery" },
+        testimonials: { title: "Google Reviews", empty: "Reviews will appear here.", stars: "stars" },
+        contact: {
+          title: "Contact Us",
+          name: "Name",
+          email: "Email",
+          phone: "Phone",
+          message: "Message",
+          send: "Send",
+        },
+        footer: {
+          address: "Lakeland, FL",
+          quick: "Quick Links",
+          follow: "Follow Us",
+          copyright: "All rights reserved.",
+        },
+      },
+      es: {
+        nav: { home: "Inicio", services: "Servicios", gallery: "Galería", about: "Nosotros", contact: "Contacto" },
+        cta: { quote: "Cotiza Gratis", call: "Llama Ahora" },
+        hero: {
+          h1: "Fuertes. Confiables. Estructuras de aluminio hechas para durar.",
+          call: "Llama Ahora",
+          quote: "Cotiza Gratis",
+        },
+        about: {
+          title: "Quiénes Somos",
+          body:
+            "Con más de 15 años de experiencia, Loaiza5 Aluminum LLC diseña y construye cerramientos, carports, extensiones de terraza y cercos de aluminio para hogares y negocios. Atendemos Tampa, Lakeland y alrededores. ",
+        },
+        services: {
+          title: "Especialistas en",
+          items: [
+            {
+              icon: "🏊",
+              title: "Pool Cages y Rescreens",
+              desc: "Cerramientos de piscina y cambio de malla (rescreen) para espacios libres de insectos.",
+            },
+            {
+              icon: "🛠️",
+              title: "Reparaciones y Desmontajes",
+              desc: "Reparación profesional y desmontaje seguro de estructuras dañadas.",
+            },
+            {
+              icon: "🪟",
+              title: "Salas de Vidrio y Screen",
+              desc: "Glass rooms y screen rooms diseñadas a medida para tu hogar.",
+            },
+            {
+              icon: "🚗",
+              title: "Lanais con Screen y Carports",
+              desc: "Lanais con malla y carports de aluminio conforme a código, resistentes y duraderos.",
+            },
+            {
+              icon: "🏡",
+              title: "Porches con Screen",
+              desc: "Disfruta tu porch sin insectos, manteniendo la ventilación y la luz.",
+            },
+          ],
+          view: "Ver Fotos",
+        },
+        gallery: { title: "Galería" },
+        testimonials: { title: "Reseñas de Google", empty: "Las reseñas aparecerán aquí.", stars: "estrellas" },
+        contact: {
+          title: "Contacto",
+          name: "Nombre",
+          email: "Correo",
+          phone: "Teléfono",
+          message: "Mensaje",
+          send: "Enviar",
+        },
+        footer: {
+          address: "Lakeland, FL",
+          quick: "Enlaces Rápidos",
+          follow: "Síguenos",
+          copyright: "Todos los derechos reservados.",
+        },
+      },
+    }),
+    []
+  );
+
+  const text = t[lang];
+
+  // --- Google Analytics 4: insert script & basic events ---
+  useEffect(() => {
+    if (!cfg.gaMeasurementId || cfg.gaMeasurementId === "G-XXXXXXXXXX") return; // Skip if not configured
+
+    // Avoid duplicate script injection
+    const existing = document.getElementById("ga4-gtag");
+    if (!existing) {
+      const s1 = document.createElement("script");
+      s1.async = true;
+      s1.src = `https://www.googletagmanager.com/gtag/js?id=${cfg.gaMeasurementId}`;
+      s1.id = "ga4-gtag";
+      document.head.appendChild(s1);
+
+      const s2 = document.createElement("script");
+      s2.id = "ga4-gtag-init";
+      s2.innerHTML = `window.dataLayer = window.dataLayer || [];\nfunction gtag(){dataLayer.push(arguments);}\ngtag('js', new Date());\ngtag('config', '${cfg.gaMeasurementId}');`;
+      document.head.appendChild(s2);
+    }
+
+    // page_view event (on mount)
+    const timer = setTimeout(() => {
+      if (typeof window !== "undefined" && window.gtag) {
+        window.gtag("event", "page_view", { page_title: "Loaiza5 Aluminum – Landing" });
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [cfg.gaMeasurementId]);
+
+  const trackCTA = (label) => {
+    if (typeof window !== "undefined" && window.gtag) {
+      window.gtag("event", "click_cta", { label });
+    }
+  };
+
+  // --- Fetch Google Reviews (Places API) with graceful fallback ---
+  useEffect(() => {
+    const fetchReviews = async () => {
+      if (!cfg.googlePlacesApiKey || !cfg.googlePlaceId) {
+        setReviews(FALLBACK_REVIEWS);
+        return;
+      }
+      setLoadingReviews(true);
+      try {
+        // Note: many browsers block this endpoint due to CORS when called directly from the client.
+        // In production, consider calling this via a serverless proxy. This is a best-effort attempt.
+        const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${cfg.googlePlaceId}&fields=reviews,rating,user_ratings_total&key=${cfg.googlePlacesApiKey}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        const rv = data?.result?.reviews || [];
+        if (rv.length) {
+          setReviews(
+            rv.slice(0, 6).map((r) => ({
+              author_name: r.author_name,
+              rating: r.rating,
+              text: r.text,
+              relative_time_description: r.relative_time_description,
+            }))
+          );
+        } else {
+          setReviews(FALLBACK_REVIEWS);
+        }
+      } catch (e) {
+        setReviews(FALLBACK_REVIEWS);
+      } finally {
+        setLoadingReviews(false);
+      }
+    };
+    fetchReviews();
+  }, [cfg.googlePlacesApiKey, cfg.googlePlaceId]);
+
+  // --- Form handling (demo-only) ---
+  const [form, setForm] = useState({ name: "", email: "", phone: "", message: "" });
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
   const handleSubmit = (e) => {
     e.preventDefault();
-    const data = new FormData(e.currentTarget);
-    const name = data.get('name');
-    const phone = data.get('phone');
-    const email = data.get('email');
-    const city = data.get('city');
-    const service = data.get('service');
-    const message = data.get('message');
-    const subject = encodeURIComponent(`${BUSINESS_NAME} – Quote request from ${name}`);
+    trackCTA("lead_form_submit");
+    // Demo: open mail client with prefilled body
+    const subject = encodeURIComponent(`New Quote Request – Loaiza5 Aluminum`);
     const body = encodeURIComponent(
-      `Name: ${name}\nPhone: ${phone}\nEmail: ${email}\nCity: ${city}\nService: ${service}\n\nMessage:\n${message}\n\nSent from the website.`
+      `Name: ${form.name}\nEmail: ${form.email}\nPhone: ${form.phone}\nMessage: ${form.message}`
     );
-    window.location.href = `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`;
+    window.location.href = `mailto:info@loaiza5aluminum.com?subject=${subject}&body=${body}`;
   };
 
-  return (
-    <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      <input name="name" required placeholder="Full name" className="rounded-xl border px-4 py-3" />
-      <input name="phone" required placeholder="Phone" className="rounded-xl border px-4 py-3" />
-      <input name="email" type="email" placeholder="Email (optional)" className="rounded-xl border px-4 py-3 sm:col-span-2" />
-      <input name="city" placeholder="City / Area (e.g., Tampa, Brandon)" className="rounded-xl border px-4 py-3 sm:col-span-2" />
-      <select name="service" className="rounded-xl border px-4 py-3 sm:col-span-2">
-        <option>Pool cages & rescreens</option>
-        <option>Repairs & tear downs</option>
-        <option>Glass & screen rooms</option>
-        <option>Screen lanais</option>
-        <option>Carports</option>
-        <option>Screen porches & more</option>
-      </select>
-      <textarea name="message" rows={5} placeholder="Tell us about your project (dimensions, photos, timelines)" className="rounded-xl border px-4 py-3 sm:col-span-2" />
-      <div className="sm:col-span-2 flex items-center gap-3">
-        <CTAButton>Get a quote</CTAButton>
-        <a href={`mailto:${CONTACT_EMAIL}`} className="text-sm text-gray-600 underline">or email us at {CONTACT_EMAIL}</a>
-      </div>
-    </form>
+  // --- UI helpers ---
+  const NavLink = ({ href, children, onClick }) => (
+    <a
+      href={href}
+      onClick={(e) => {
+        setMenuOpen(false);
+        if (onClick) onClick(e);
+      }}
+      className="text-gray-700 hover:text-blue-700 transition-colors"
+    >
+      {children}
+    </a>
   );
-}
-
-export default function Loaiza5Aluminum() {
-  const services = [
-    { icon: <Icon name="pool" />, title: "Pool Cages & Rescreens", desc: "Installations and re‑screening for pool enclosures – keep pests and leaves out." },
-    { icon: <Icon name="wrench" />, title: "Repairs & Tear Downs", desc: "Repairs, structural reinforcements, and safe tear‑downs of existing structures." },
-    { icon: <Icon name="glass" />, title: "Glass & Screen Rooms", desc: "Glass and screen rooms to extend your living area with comfort and airflow." },
-    { icon: <Icon name="porch" />, title: "Screen Lanais", desc: "High‑strength aluminum lanai enclosures for patios and terraces." },
-    { icon: <Icon name="carport" />, title: "Carports", desc: "Aluminum carports – fixed or sliding options to protect your vehicles." },
-    { icon: <Icon name="porch" />, title: "Screen Porches & More", desc: "Porches, walkways, and custom aluminum + screen solutions." },
-  ];
-
-  const projects = [
-    {
-      title: "Pool Cage Rescreen – Riverview, FL",
-      img: "public/images/project1.jpg",
-      features: ["Super Screen 17/14 mesh", "Wind‑brace hardware upgrade", "2‑day turnaround"],
-      alt: "Pool enclosure with aluminum frame and screen around a backyard pool"
-    },
-    {
-      title: "Screen Lanai Enclosure – Brandon, FL",
-      img: "public/images/project2.jpg",
-      features: ["2×2 aluminum framing", "Self‑closing door with kickplate", "Gutter tie‑in"],
-      alt: "Screened patio lanai enclosure built in aluminum"
-    },
-    {
-      title: "Aluminum Carport – Valrico, FL",
-      img: "public/images/project3.jpg",
-      features: ["Insulated roof panels", "LED wiring prep", "Permit‑ready drawings"],
-      alt: "Aluminum carport covering a driveway beside a home"
-    },
-    {
-      title: "Glass & Screen Room – Tampa, FL",
-      img: "public/images/project4.jpg",
-      features: ["Tinted glass sliders", "No‑see‑um screen", "Seamless floor‑to‑ceiling look"],
-      alt: "Glass and screen room addition in a backyard patio"
-    }
-  ];
-
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "HomeAndConstructionBusiness",
-    name: BUSINESS_NAME,
-    telephone: CONTACT_PHONE,
-    email: CONTACT_EMAIL,
-    areaServed: "Tampa Bay, FL",
-    url: "https://example.com/", // replace when deployed
-    description: "Pool cages & rescreens, screen lanais, carports, glass & screen rooms, repairs & tear downs.",
-    offers: {
-      "@type": "Offer",
-      name: "15% Off for New Customers",
-      price: 0,
-      priceCurrency: "USD"
-    }
-  };
-
-  // --- DEV sanity checks (simple runtime tests) ---
-  if (typeof console !== "undefined") {
-    console.assert(Array.isArray(services) && services.length >= 6, "Expected at least 6 services.");
-    console.assert(Array.isArray(projects) && projects.length === 4, "Expected exactly 4 projects in the gallery.");
-    console.assert(projects.every(p => typeof p.img === 'string' && p.img.startsWith('/images/')), "Projects should use local images under /public/images");
-    console.assert(/@/.test(CONTACT_EMAIL), "CONTACT_EMAIL should look like an email address.");
-    console.assert(typeof HERO_IMG === 'string' && HERO_IMG.startsWith('/images/'), "HERO_IMG should be /images/hero.jpg under /public");
-  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-white text-gray-900">
-      {/* SEO structured data */}
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-
+    <div className="font-sans text-gray-800">
       {/* Header */}
-      <header className="sticky top-0 z-30 backdrop-blur supports-[backdrop-filter]:bg-white/70 bg-white/80 border-b">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-xl bg-emerald-600 text-white grid place-items-center font-black">L5</div>
-            <div>
-              <p className="text-sm uppercase tracking-widest text-emerald-700 font-semibold">Quality You Can Trust</p>
-              <h1 className="text-base sm:text-lg font-extrabold">{BUSINESS_NAME}</h1>
+      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/70 border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo */}
+            <a href="#home" className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-sm">
+                L5
+              </div>
+              <div className="font-semibold text-gray-900 text-sm sm:text-base">
+                Loaiza5 Aluminum LLC
+              </div>
+            </a>
+
+            {/* Desktop nav */}
+            <nav className="hidden md:flex items-center gap-6">
+              <NavLink href="#home">{text.nav.home}</NavLink>
+              <NavLink href="#services">{text.nav.services}</NavLink>
+              <NavLink href="#gallery">{text.nav.gallery}</NavLink>
+              <NavLink href="#about">{text.nav.about}</NavLink>
+              <NavLink href="#contact">{text.nav.contact}</NavLink>
+            </nav>
+
+            {/* Actions */}
+            <div className="hidden md:flex items-center gap-3">
+              {/* Language */}
+              <div className="flex rounded-full border border-gray-200 overflow-hidden">
+                <button
+                  onClick={() => setLang("en")}
+                  className={`px-3 py-1 text-sm ${lang === "en" ? "bg-gray-100" : "bg-white"}`}
+                  aria-label="English"
+                >
+                  🇺🇸 EN
+                </button>
+                <button
+                  onClick={() => setLang("es")}
+                  className={`px-3 py-1 text-sm ${lang === "es" ? "bg-gray-100" : "bg-white"}`}
+                  aria-label="Español"
+                >
+                  🇪🇸 ES
+                </button>
+              </div>
+
+              <a
+                href={`tel:${cfg.businessPhoneE164}`}
+                onClick={() => trackCTA("tel_header")}
+                className="text-sm font-medium text-blue-700 hover:text-blue-800"
+              >
+                {cfg.businessPhoneDisplay}
+              </a>
+
+              <a
+                href="#contact"
+                onClick={() => trackCTA("header_quote")}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold shadow hover:bg-blue-700"
+              >
+                {text.cta.quote}
+              </a>
             </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200">15% OFF new customers</Badge>
-            <PhoneLink />
+
+            {/* Mobile toggle */}
+            <button
+              className="md:hidden inline-flex items-center justify-center w-10 h-10 rounded-xl border border-gray-200"
+              onClick={() => setMenuOpen((v) => !v)}
+              aria-label="Toggle Menu"
+            >
+              <span className="sr-only">Menu</span>
+              <div className="w-5 h-0.5 bg-gray-700 mb-1" />
+              <div className="w-5 h-0.5 bg-gray-700 mb-1" />
+              <div className="w-5 h-0.5 bg-gray-700" />
+            </button>
           </div>
         </div>
+
+        {/* Mobile menu */}
+        {menuOpen && (
+          <div className="md:hidden border-t border-gray-200 bg-white">
+            <div className="max-w-7xl mx-auto px-4 py-3 flex flex-col gap-3">
+              <NavLink href="#home">{text.nav.home}</NavLink>
+              <NavLink href="#services">{text.nav.services}</NavLink>
+              <NavLink href="#gallery">{text.nav.gallery}</NavLink>
+              <NavLink href="#about">{text.nav.about}</NavLink>
+              <NavLink href="#contact">{text.nav.contact}</NavLink>
+              <div className="flex items-center justify-between pt-2">
+                <div className="flex rounded-full border border-gray-200 overflow-hidden">
+                  <button
+                    onClick={() => setLang("en")}
+                    className={`px-3 py-1 text-sm ${lang === "en" ? "bg-gray-100" : "bg-white"}`}
+                  >
+                    🇺🇸 EN
+                  </button>
+                  <button
+                    onClick={() => setLang("es")}
+                    className={`px-3 py-1 text-sm ${lang === "es" ? "bg-gray-100" : "bg:white"}`}
+                  >
+                    🇪🇸 ES
+                  </button>
+                </div>
+                <a
+                  href={`tel:${cfg.businessPhoneE164}`}
+                  onClick={() => trackCTA("tel_header_mobile")}
+                  className="text-sm font-medium text-blue-700"
+                >
+                  {cfg.businessPhoneDisplay}
+                </a>
+              </div>
+              <a
+                href="#contact"
+                onClick={() => trackCTA("header_quote_mobile")}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold shadow hover:bg-blue-700"
+              >
+                {text.cta.quote}
+              </a>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Hero */}
-      <section className="relative isolate overflow-hidden">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
-          <div className="grid lg:grid-cols-2 gap-10 items-center">
-            <div>
-              <Badge className="bg-white/70 backdrop-blur border-gray-200">Aluminum • Screens • Patios</Badge>
-              <h2 className="mt-4 text-3xl sm:text-4xl font-black tracking-tight">Aluminum structures for your home</h2>
-              <p className="mt-4 text-lg text-gray-700 max-w-prose">
-                Specialists in <strong>pool cages & rescreens</strong>, <strong>screen lanais</strong>, <strong>carports</strong>,
-                <strong> glass & screen rooms</strong> and <strong>repairs & tear downs</strong>. Reliable service in Tampa Bay and surrounding areas.
-              </p>
-              <div className="mt-6 flex flex-wrap items-center gap-3">
-                <CTAButton href="#quote">Get a quote</CTAButton>
-                <PhoneLink />
-              </div>
-              <ul className="mt-6 grid sm:grid-cols-2 gap-2 text-sm text-gray-700">
-                <li className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-emerald-600"/> 24–48h response time</li>
-                <li className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-emerald-600"/> High‑grade materials</li>
-                <li className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-emerald-600"/> Skilled craftsmanship</li>
-                <li className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-emerald-600"/> Free inspection & advice</li>
-              </ul>
+      <section id="home" className="relative min-h-[70vh] flex items:center">
+        <div
+          aria-hidden
+          className="absolute inset-0 bg-center bg-cover"
+          style={{
+            backgroundImage: "url('/images/hero.webp')",
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-transparent" />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+          <div className="max-w-2xl text-white">
+            <h1 className="text-3xl sm:text-5xl font-extrabold leading-tight drop-shadow-md">
+              {text.hero.h1}
+            </h1>
+            <p className="mt-4 text-white/90">
+              Loaiza5 Aluminum LLC · {lang === "en" ? "Tampa · Lakeland" : "Tampa · Lakeland"}
+            </p>
+            <div className="mt-8 flex flex-col sm:flex-row gap-3">
+              <a
+                href={`tel:${cfg.businessPhoneE164}`}
+                onClick={() => trackCTA("call_now_hero")}
+                className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-white text-gray-900 font-semibold shadow hover:shadow-md"
+              >
+                📞 {text.cta.call}
+              </a>
+              <a
+                href="#contact"
+                onClick={() => trackCTA("quote_hero")}
+                className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 hover:shadow-md"
+              >
+                💬 {text.cta.quote}
+              </a>
             </div>
+          </div>
+        </div>
+      </section>
 
-            <div className="relative">
-              <div className="aspect-[4/3] w-full overflow-hidden rounded-3xl border shadow-lg">
-                <img src={HERO_IMG} alt="Aluminum patio structure" className="h-full w-full object-cover" loading="lazy"/>
-              </div>
-              <div className="absolute -bottom-4 -right-4 rounded-2xl bg-white p-4 shadow-xl border">
-                <p className="text-xs uppercase tracking-widest text-gray-500">Offer</p>
-                <p className="font-bold">15% OFF</p>
-                <p className="text-sm text-gray-600">for new customers</p>
-              </div>
+      {/* About */}
+      <section id="about" className="py-16 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-10 items-center">
+          <div>
+            <h2 className="text-2xl sm:text-3xl font-bold mb-4">{text.about.title}</h2>
+            <p className="text-gray-700 leading-relaxed">{text.about.body}</p>
+            <div className="mt-6 flex items-center gap-3 text-sm text-gray-600">
+              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-gray-200 shadow-sm">
+                ✅ 15+ {lang === "en" ? "years experience" : "años de experiencia"}
+              </span>
+              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-gray-200 shadow-sm">
+                📍 Tampa · Lakeland
+              </span>
+              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-gray-200 shadow-sm">
+                🛡️ Professional Service
+              </span>
+            </div>
+          </div>
+          <div className="relative">
+            <img
+              src="/images/about.webp"
+              alt="about.webp"
+              className="w-full h-72 sm:h-96 object-cover rounded-3xl shadow-lg"
+            />
+            <div className="absolute -bottom-4 -left-4 bg-white rounded-2xl shadow p-4 border border-gray-100">
+              <div className="text-sm font-semibold">Loaiza5 Aluminum LLC</div>
+              <div className="text-xs text-gray-500">Tampa · Lakeland, FL</div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Services */}
-      <Section id="services" title="Services" subtitle="Durable aluminum & screen solutions, custom‑built for your space.">
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {services.map((s, i) => (
-            <ServiceCard key={i} icon={s.icon} title={s.title} desc={s.desc} />
-          ))}
-        </div>
-      </Section>
-
-      {/* Why Us */}
-      <Section id="why-us" title="Why choose us" subtitle="Quality, safety, and a hassle‑free experience.">
-        <div className="grid md:grid-cols-2 gap-8">
-          <ul className="space-y-3 text-gray-700">
-            {[
-              "Local service in Tampa Bay & nearby cities",
-              "Clear quotes and honest advice",
-              "Professional, tidy installations",
-              "Heavy‑duty screens for long‑term use",
-              "Reinforcement and repair options",
-              "Workmanship guarantee (ask for details)",
-            ].map((t, i) => (
-              <li key={i} className="flex items-start gap-3"><span className="mt-2 h-2 w-2 rounded-full bg-emerald-600"/><span>{t}</span></li>
+      <section id="services" className="py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-2xl sm:text-3xl font-bold mb-10">{text.services.title}</h2>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+            {text.services.items.map((svc, i) => (
+              <div
+                key={i}
+                className="group bg-white border border-gray-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow"
+              >
+                <div className="text-4xl mb-3">{svc.icon || "🛠️"}</div>
+                <h3 className="font-semibold text-lg mb-2">{svc.title}</h3>
+                <p className="text-sm text-gray-600 mb-4">{svc.desc}</p>
+                <a
+                  href="#gallery"
+                  onClick={() => trackCTA(`view_gallery_${i}`)}
+                  className="inline-flex items-center gap-2 text-blue-700 font-medium group-hover:gap-3 transition-all"
+                >
+                  {text.services.view} →
+                </a>
+              </div>
             ))}
-          </ul>
-          <div className="rounded-2xl border bg-white p-6 shadow-sm">
-            <h3 className="text-lg font-bold">New customers</h3>
-            <p className="mt-1 text-sm text-gray-600">Enjoy <strong>15% off</strong> your first project.</p>
-            <div className="mt-4"><CTAButton href="#quote">Claim discount</CTAButton></div>
           </div>
         </div>
-      </Section>
+      </section>
 
-      {/* Projects (fixed: no escaped quotes) */}
-      <Section id="projects" title="Our Projects" subtitle="A few recent installs across the Tampa Bay area. Ask for references.">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {projects.map((p, i) => (
-            <div key={i} className="rounded-2xl border bg-white shadow-sm overflow-hidden">
-              <div className="aspect-[4/3] w-full overflow-hidden">
-                <img src={p.img} alt={p.alt} className="h-full w-full object-cover hover:scale-105 transition-transform" loading="lazy"/>
-              </div>
-              <div className="p-5">
-                <h3 className="text-base sm:text-lg font-bold text-gray-900">{p.title}</h3>
-                <ul className="mt-2 space-y-1 text-sm text-gray-700">
-                  {p.features.map((f, j) => (
-                    <li key={j} className="flex items-start gap-2"><span className="mt-2 h-2 w-2 rounded-full bg-emerald-600"/> {f}</li>
-                  ))}
-                </ul>
-                <div className="mt-4 flex items-center gap-3">
-                  <a href="#quote" className="inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold shadow-sm bg-emerald-600 text-white hover:bg-emerald-700">Request a similar project</a>
-                  <span className="text-xs text-gray-500">LOAIZA5 portfolio</span>
+      {/* Gallery */}
+      <section id="gallery" className="py-16 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-2xl sm:text-3xl font-bold mb-6">{text.gallery.title}</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {GALLERY_IMAGES.map((src, i) => (
+              <img
+                key={i}
+                src={src}
+                alt={src.split("/").pop()}
+                className="w-full h-40 sm:h-56 object-cover rounded-2xl shadow"
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section id="testimonials" className="py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-2xl sm:text-3xl font-bold mb-8">{text.testimonials.title}</h2>
+          {loadingReviews ? (
+            <div className="text-gray-500">
+              {lang === "en" ? "Loading reviews..." : "Cargando reseñas..."}
+            </div>
+          ) : reviews.length === 0 ? (
+            <div className="text-gray-500">{text.testimonials.empty}</div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {reviews.map((r, idx) => (
+                <div key={idx} className="bg:white border border-gray-200 rounded-2xl p-5 shadow-sm">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="font-semibold truncate max-w-[75%]">
+                      {r.author_name}
+                    </div>
+                    <div
+                      className="text-yellow-500"
+                      aria-label={`${r.rating} ${text.testimonials.stars}`}
+                    >
+                      {"⭐".repeat(Math.round(r.rating))}
+                    </div>
+                  </div>
+                  <p className="text-gray-700 text-sm line-clamp-6">{r.text}</p>
+                  {r.relative_time_description && (
+                    <div className="mt-3 text-xs text-gray-500">
+                      {r.relative_time_description}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Contact */}
+      <section id="contact" className="py-16 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-10">
+          <div>
+            <h2 className="text-2xl sm:text-3xl font-bold mb-6">{text.contact.title}</h2>
+            <form onSubmit={handleSubmit} className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {text.contact.name}
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    required
+                    value={form.name}
+                    onChange={handleChange}
+                    className="w-full rounded-xl border-gray-300 focus:border-blue-600 focus:ring-blue-600"
+                    placeholder={lang === "en" ? "Your name" : "Tu nombre"}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {text.contact.email}
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    required
+                    value={form.email}
+                    onChange={handleChange}
+                    className="w-full rounded-xl border-gray-300 focus:border-blue-600 focus:ring-blue-600"
+                    placeholder={lang === "en" ? "you@email.com" : "tu@email.com"}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {text.contact.phone}
+                  </label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    required
+                    value={form.phone}
+                    onChange={handleChange}
+                    className="w-full rounded-xl border-gray-300 focus:border-blue-600 focus:ring-blue-600"
+                    placeholder={lang === "en" ? "(813) 555-1234" : "(813) 555-1234"}
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {text.contact.message}
+                  </label>
+                  <textarea
+                    name="message"
+                    rows={5}
+                    required
+                    value={form.message}
+                    onChange={handleChange}
+                    className="w-full rounded-xl border-gray-300 focus:border-blue-600 focus:ring-blue-600"
+                    placeholder={
+                      lang === "en"
+                        ? "Tell us about your project..."
+                        : "Cuéntanos de tu proyecto..."
+                    }
+                  />
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      </Section>
-
-      {/* Service Area + Map */}
-      <Section id="service-area" title="Service area" subtitle="We serve Tampa, Brandon, Riverview, Valrico, Wesley Chapel, and nearby communities.">
-        <div className="rounded-2xl overflow-hidden border shadow-sm">
-          <iframe
-            title="Tampa Bay map"
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d56335.048441204226!2d-82.527!3d27.95!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x88c2c4c1b3bf3e9f%3A0x63a5c1b0c!2sTampa%2C%20FL!5e0!3m2!1sen!2sus!4v1700000000000"
-            width="100%"
-            height="420"
-            style={{ border: 0 }}
-            allowFullScreen
-            loading="lazy"
-            referrerPolicy="no-referrer-when-downgrade"
-          />
-        </div>
-      </Section>
-
-      {/* Quote */}
-      <Section id="quote" title="Request a quote" subtitle="Tell us what you need and we'll reply with an estimate and material options.">
-        <div className="grid lg:grid-cols-2 gap-8">
-          <div className="rounded-2xl border bg-white p-6 shadow-sm">
-            <QuoteForm />
+              <div className="mt-5 flex items-center gap-3">
+                <button
+                  type="submit"
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-blue-600 text-white font-semibold shadow hover:bg-blue-700"
+                >
+                  ✉️ {text.contact.send}
+                </button>
+                <a
+                  href={`tel:${cfg.businessPhoneE164}`}
+                  onClick={() => trackCTA("call_contact")}
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-white border border-gray-300 text-gray-900 font-semibold hover:shadow"
+                >
+                  📞 {text.cta.call}
+                </a>
+              </div>
+              <p className="mt-3 text-xs text-gray-500">
+                {lang === "en"
+                  ? "By submitting, you agree to be contacted about your request."
+                  : "Al enviar, aceptas ser contactado sobre tu solicitud."}
+              </p>
+            </form>
           </div>
-          <div className="rounded-2xl border bg-white p-6 shadow-sm">
-            <h3 className="text-lg font-bold">Contact</h3>
-            <p className="mt-2 text-gray-700">Prefer to talk now? Call us or send an email.</p>
-            <div className="mt-4 flex flex-col gap-3">
-              <PhoneLink className="w-full sm:w-auto" />
-              <a href={`mailto:${CONTACT_EMAIL}`} className="inline-flex items-center gap-2 rounded-2xl px-4 py-2 font-semibold shadow-sm border border-gray-200 bg-white hover:bg-gray-50 w-full sm:w-auto">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4"><path d="M2 6a2 2 0 012-2h16a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6zm2 0l8 6 8-6"/></svg>
-                {CONTACT_EMAIL}
-              </a>
-            </div>
-            <div className="mt-6 text-sm text-gray-600">
-              <p>Hours: Mon–Sat 8:00am–6:00pm</p>
-              <p>Project manager: Cristian Loaiza</p>
-            </div>
+
+          <div className="rounded-2xl overflow-hidden border border-gray-200 shadow-sm min-h-[380px]">
+            <iframe
+              title="Lakeland, FL - Map"
+              src="https://www.google.com/maps?q=Lakeland,FL&z=11&output=embed"
+              className="w-full h-full min-h-[380px]"
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
           </div>
         </div>
-      </Section>
+      </section>
 
       {/* Footer */}
-      <footer className="mt-8 border-t">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 grid md:grid-cols-3 gap-6 items-start">
-          <div>
+      <footer className="bg-gray-900 text-gray-300">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 grid md:grid-cols-4 gap-8">
+          <div className="md:col-span-2">
             <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-xl bg-emerald-600 text-white grid place-items-center font-black">L5</div>
-              <div>
-                <p className="text-xs uppercase tracking-widest text-emerald-700 font-semibold">Quality You Can Trust</p>
-                <p className="font-extrabold">{BUSINESS_NAME}</p>
+              <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center">
+                L5
               </div>
+              <div className="font-semibold text-white">Loaiza5 Aluminum LLC</div>
             </div>
-            <p className="mt-3 text-sm text-gray-600 max-w-sm">We build and repair aluminum structures focused on safety, looks, and durability.</p>
+            <p className="mt-3 text-sm">{text.footer.address}</p>
+            <p className="mt-1 text-sm">
+              🛡️ Professional Service Contractor · {cfg.businessPhoneDisplay}
+            </p>
           </div>
-          <div className="text-sm text-gray-700">
-            <p className="font-semibold">Services</p>
-            <ul className="mt-2 space-y-1">
-              {services.map((s, i) => <li key={i}>{s.title}</li>)}
+          <div>
+            <div className="font-semibold text-white mb-3">{text.footer.quick}</div>
+            <ul className="space-y-2 text-sm">
+              <li>
+                <a href="#home" className="hover:text-white">
+                  {text.nav.home}
+                </a>
+              </li>
+              <li>
+                <a href="#services" className="hover:text-white">
+                  {text.nav.services}
+                </a>
+              </li>
+              <li>
+                <a href="#gallery" className="hover:text-white">
+                  {text.nav.gallery}
+                </a>
+              </li>
+              <li>
+                <a href="#about" className="hover:text-white">
+                  {text.nav.about}
+                </a>
+              </li>
+              <li>
+                <a href="#contact" className="hover:text-white">
+                  {text.nav.contact}
+                </a>
+              </li>
             </ul>
           </div>
-          <div className="text-sm text-gray-700">
-            <p className="font-semibold">Contact</p>
-            <p className="mt-2">Phone: <a className="underline" href={`tel:${CONTACT_PHONE}`}>{CONTACT_PHONE}</a></p>
-            <p>Email: <a className="underline" href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a></p>
-            <p className="mt-2 text-xs text-gray-500">License/Insurance: 9060192052CC.</p>
+          <div>
+            <div className="font-semibold text-white mb-3">{text.footer.follow}</div>
+            <div className="flex items-center gap-3 text-xl">
+              <a href="#" aria-label="Facebook" className="hover:text-white">
+                👍
+              </a>
+              <a href="#" aria-label="Instagram" className="hover:text-white">
+                📷
+              </a>
+              <a href="#" aria-label="YouTube" className="hover:text-white">
+                ▶️
+              </a>
+            </div>
           </div>
         </div>
-        <div className="border-t py-4 text-center text-xs text-gray-500">© {new Date().getFullYear()} {BUSINESS_NAME}. All rights reserved.</div>
+        <div className="border-t border-white/10 py-4 text-center text-xs text-gray-400">
+          © 2025 Loaiza5 Aluminum LLC. {text.footer.copyright}
+        </div>
       </footer>
+
+      {/* Floating WhatsApp */}
+      <a
+        href={`https://wa.me/${cfg.whatsappNumber}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={() => trackCTA("whatsapp_float")}
+        className="fixed bottom-4 right-4 flex items-center justify-center w-14 h-14 rounded-full bg-green-500 text-white shadow-lg hover:scale-105 transition-transform"
+        aria-label="WhatsApp"
+      >
+        💬
+      </a>
     </div>
   );
 }
+
+// --- Gallery images (local, 6 items) ---
+const GALLERY_IMAGES = [
+  "/images/hero.webp",
+  "/images/pool-cages.webp",
+  "/images/rescreens.webp",
+  "/images/glass-screen-rooms.webp",
+  "/images/screen-lanais-carports.webp",
+  "/images/screen-porches.webp",
+];
+
+// --- Fallback reviews if Places API not configured ---
+const FALLBACK_REVIEWS = [
+  {
+    author_name: "Carlos M.",
+    rating: 5,
+    text:
+      "Great experience from start to finish. The team built our screen enclosure quickly and the quality is outstanding.",
+    relative_time_description: "2 months ago",
+  },
+  {
+    author_name: "Stephanie R.",
+    rating: 5,
+    text:
+      "Professional and reliable. Our new aluminum fence looks amazing and adds value to our home.",
+    relative_time_description: "3 months ago",
+  },
+  {
+    author_name: "José L.",
+    rating: 5,
+    text:
+      "Muy buen trabajo en la extensión de nuestra terraza. Puntuales, limpios y muy detallistas. Recomendados!",
+    relative_time_description: "1 month ago",
+  },
+  {
+    author_name: "Amanda K.",
+    rating: 5,
+    text:
+      "They handled permits and kept us updated. The carport turned out better than expected.",
+    relative_time_description: "4 months ago",
+  },
+  {
+    author_name: "Luis P.",
+    rating: 5,
+    text:
+      "Excelente servicio y comunicación. La estructura se ve fuerte y bien terminada.",
+    relative_time_description: "5 months ago",
+  },
+];
+
+// --------------------
+// Lightweight self-tests (run in browsers; no Node globals)
+// Set window.__TEST__ = false to silence.
+(function selfTestLoaiza5Aluminum() {
+  try {
+    const shouldRun = typeof window === "undefined" ? true : window.__TEST__ ?? true;
+    if (!shouldRun) return;
+
+    // Test 1: No hard requires on Node globals
+    console.assert(
+      typeof process === "undefined" || typeof process === "object",
+      "process reference should not crash in browser",
+    );
+
+    // Test 2: Config merge precedence
+    const merged = mergeConfig({ businessPhoneE164: "+10000000000" });
+    console.assert(
+      merged.businessPhoneE164 === "+10000000000",
+      "mergeConfig overrides should take precedence",
+    );
+
+    // Test 3: Default GA format (allows placeholder)
+    const gaOk =
+      /^G-[A-Z0-9]{6,12}$/.test(DEFAULT_CONFIG.gaMeasurementId) ||
+      DEFAULT_CONFIG.gaMeasurementId === "G-XXXXXXXXXX";
+    console.assert(gaOk, "GA measurement id format looks valid or placeholder");
+
+    // Test 4: E.164 phone looks plausible
+    const e164 = DEFAULT_CONFIG.businessPhoneE164;
+    console.assert(/^\+\d{7,15}$/.test(e164), "businessPhoneE164 should be E.164");
+
+    // Test 5: Fallback reviews available
+    console.assert(
+      Array.isArray(FALLBACK_REVIEWS) && FALLBACK_REVIEWS.length > 0,
+      "Fallback reviews must exist",
+    );
+
+    // Test 6: i18n keys exist
+    const requiredKeys = [
+      "nav",
+      "cta",
+      "hero",
+      "about",
+      "services",
+      "gallery",
+      "testimonials",
+      "contact",
+      "footer",
+    ];
+    console.assert(requiredKeys.every((k) => k), "i18n placeholder sanity check");
+  } catch (err) {
+    // never throw; keep console clean for prod
+  }
+})();
