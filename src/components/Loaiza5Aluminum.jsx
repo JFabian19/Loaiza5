@@ -270,7 +270,7 @@ export default function Loaiza5Aluminum(props) {
     const body = encodeURIComponent(
       `Name: ${form.name}\nEmail: ${form.email}\nPhone: ${form.phone}\nMessage: ${form.message}`
     );
-    window.location.href = `mailto:info@loaiza5aluminum.com?subject=${subject}&body=${body}`;
+    window.location.href = `mailto:loaiza5aluminum@gmail.com?subject=${subject}&body=${body}`;
   };
 
   // --- UI helpers ---
